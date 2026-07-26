@@ -1,4 +1,3 @@
-![LootsUI](https://raw.githubusercontent.com/looterz/LootsUI/main/Media/LootsUI-Icon.png)
 
 # Loot's UI
 
