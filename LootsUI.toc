@@ -1,0 +1,18 @@
+## Interface: 120007
+## Title: LootsUI
+## Notes: Hide and show interface frames with macro conditionals.
+## Author: looterz
+## Version: 0.1.0
+## SavedVariables: LootsUIDB
+## IconTexture: Interface\AddOns\LootsUI\Media\icon.tga
+## Category: User Interface
+
+embeds.xml
+
+Core\Registry.lua
+Core\Conditions.lua
+Core\Fade.lua
+Core\Visibility.lua
+Core\Options.lua
+
+LootsUI.lua

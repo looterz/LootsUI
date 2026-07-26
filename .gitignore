@@ -1,0 +1,19 @@
+# Developer material, not part of the addon
+Docs/
+Tests/
+__pycache__/
+*.pyc
+
+# Packaging output
+build/
+*.zip
+
+# Editor and OS noise
+*.bak
+*.orig
+*~
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
