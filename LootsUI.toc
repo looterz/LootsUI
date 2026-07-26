@@ -2,7 +2,7 @@
 ## Title: LootsUI
 ## Notes: Hide and show interface frames with macro conditionals.
 ## Author: looterz
-## Version: 0.1.0
+## Version: 0.2.0
 ## SavedVariables: LootsUIDB
 ## IconTexture: Interface\AddOns\LootsUI\Media\icon.tga
 ## Category: User Interface

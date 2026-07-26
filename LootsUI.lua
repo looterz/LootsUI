@@ -15,9 +15,9 @@ local function buildDefaults()
 			rules = Registry:BuildDefaults(),
 			overrides = {},
 			fade = {
-				mode = "instant",
-				inDuration = 0.20,
-				outDuration = 0.35,
+				mode = "fade",
+				inDuration = 0.10,
+				outDuration = 0.10,
 			},
 		},
 	}
@@ -58,7 +58,48 @@ function LootsUI:OnEnable()
 		EventRegistry:RegisterCallback("EditMode.Exit", self.OnEditModeExit, self)
 	end
 
+	self:RegisterEvent("ADDON_LOADED", "OnAddonLoaded")
+	self:HookQuickKeybind()
+
 	self:ReloadProfile()
+end
+
+-- Binding a key means hovering the button you want to bind, so everything has to
+-- be on screen for it. This watches the frame rather than the addon that opens
+-- it, so it works however quick keybind mode was entered.
+function LootsUI:HookQuickKeybind()
+	if self.keybindHooked or not QuickKeybindFrame then
+		return
+	end
+
+	self.keybindHooked = true
+	self:UnregisterEvent("ADDON_LOADED")
+
+	QuickKeybindFrame:HookScript("OnShow", function()
+		self:OnKeybindModeStart()
+	end)
+
+	QuickKeybindFrame:HookScript("OnHide", function()
+		self:OnKeybindModeEnd()
+	end)
+end
+
+function LootsUI:OnAddonLoaded()
+	self:HookQuickKeybind()
+end
+
+function LootsUI:OnKeybindModeStart()
+	if not Visibility:IsSuspended() then
+		self.suspendedForKeybind = true
+		Visibility:Suspend()
+	end
+end
+
+function LootsUI:OnKeybindModeEnd()
+	if self.suspendedForKeybind then
+		self.suspendedForKeybind = nil
+		Visibility:Resume()
+	end
 end
 
 function LootsUI:OnDisable()

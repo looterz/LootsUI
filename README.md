@@ -1,4 +1,3 @@
-
 # Loot's UI
 
 Hide and show interface frames with macro conditionals, on every flavor of World of Warcraft.
@@ -118,8 +117,9 @@ never out of date.
 
 ## Fading
 
-Frames can snap or fade. The Fading tab sets which one to use by default and how long a fade
-takes, and any frame can be set to its own Instant or Fade regardless of the default.
+Frames can snap or fade. Fading is the default, a tenth of a second each way. The Fading tab
+changes that and the timings, and any frame can be set to its own Instant or Fade regardless of
+the default.
 
 One thing to know: a frame hidden by a fade, or by any rule using a LootsUI condition, goes
 transparent rather than fully hidden, so it can still catch a mouse click in the space it
@@ -131,6 +131,16 @@ combat has started.
 
 Fades interrupt cleanly, so a frame caught half way through fading out reverses from where it
 is rather than starting over.
+
+## Keybinding
+
+Binding a key means hovering the button you want to bind, which is impossible if the bar is
+hidden. So while the game's Quick Keybind Mode is open, LootsUI reveals everything, and hands
+control back to your rules the moment you leave it. Nothing to turn on.
+
+This follows the mode itself rather than any particular addon, so it works whether you got there
+from the Key Bindings panel or with
+[QuickKeybindMode](https://github.com/looterz/QuickKeybindMode)'s `/kb`.
 
 ## Supported clients
 
