@@ -5,6 +5,7 @@ ns.Options = Options
 
 local Registry = ns.Registry
 local Conditions = ns.Conditions
+local Profiles = ns.Profiles
 
 local PRESETS = {
 	immersive = {
@@ -202,13 +203,15 @@ function Options:Build(addon)
 						type = "description",
 						order = 1,
 						fontSize = "medium",
-						name = "Applying a preset overwrites the rules in the current profile. Create a profile first if you want to keep what you have.\n",
+						name = "Applying a preset overwrites the rules in the active profile. Branch or export your profile in the Profiles tab first if you want to keep what you have.\n",
 					},
 					clear = {
 						type = "execute",
 						order = 2,
 						name = "Clear all rules",
 						desc = "Empties every box in this profile and hands all frames back to the game.",
+						confirm = true,
+						confirmText = "Clear every rule in the active profile?",
 						func = function() addon:ClearAllRules() end,
 					},
 				},
@@ -229,9 +232,13 @@ function Options:Build(addon)
 			order = 10 + index,
 			name = preset.label,
 			desc = preset.description,
+			confirm = true,
+			confirmText = preset.label .. " will replace every rule in the active profile.",
 			func = function() addon:ApplyPreset(key) end,
 		}
 	end
+
+	options.args.profiles = Profiles:BuildOptions(addon)
 
 	local categoryOrder = 1
 	local overrideOrder = 1

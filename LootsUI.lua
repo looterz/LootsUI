@@ -8,33 +8,18 @@ local Registry = ns.Registry
 local Conditions = ns.Conditions
 local Visibility = ns.Visibility
 local Options = ns.Options
-
-local function buildDefaults()
-	return {
-		profile = {
-			rules = Registry:BuildDefaults(),
-			overrides = {},
-			fade = {
-				mode = "fade",
-				inDuration = 0.10,
-				outDuration = 0.10,
-			},
-		},
-	}
-end
+local Profiles = ns.Profiles
 
 function LootsUI:OnInitialize()
 	self.conditionEvents = {}
-	self.db = LibStub("AceDB-3.0"):New("LootsUIDB", buildDefaults(), true)
+	self.db = LibStub("AceDB-3.0"):New("LootsUIDB", { profile = Profiles:Defaults() }, true)
+	Profiles:Cleanup(self.db)
 
 	local AceConfig = LibStub("AceConfig-3.0")
 	local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 	AceConfig:RegisterOptionsTable(ADDON .. "_options", Options:Build(self))
 	self.optionsFrame = AceConfigDialog:AddToBlizOptions(ADDON .. "_options", "LootsUI")
-
-	AceConfig:RegisterOptionsTable(ADDON .. "_profiles", LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db))
-	AceConfigDialog:AddToBlizOptions(ADDON .. "_profiles", "Profiles", "LootsUI")
 
 	self.db.RegisterCallback(self, "OnProfileChanged", "ReloadProfile")
 	self.db.RegisterCallback(self, "OnProfileCopied", "ReloadProfile")

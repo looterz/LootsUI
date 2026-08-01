@@ -19,8 +19,8 @@ of the game.
    own rules.
 3. Frames with an empty box are left alone.
 
-Presets overwrite the rules in the current profile, so make a profile first if you want to keep
-what you have. Profiles live in the Profiles tab and can differ per character.
+Presets overwrite the rules in the active profile, and ask before doing it. See the Profiles
+section below for keeping settings per character and backing them up.
 
 ## Commands
 
@@ -131,6 +131,21 @@ combat has started.
 
 Fades interrupt cleanly, so a frame caught half way through fading out reverses from where it
 is rather than starting over.
+
+## Profiles
+
+Every character starts on the shared Default profile, so a change made there follows all of
+them. To give one character its own settings, open the Profiles tab and branch: the new profile
+starts as a copy of what you have and only shows up for that character, so the rest stay on
+Default.
+
+The same tab has the rest of the toolbox: create a profile with a name of your own, duplicate
+the active one, rename it, reset it, or delete one you no longer want. Copy settings from
+pulls another profile's setup into the active one, including another character's, handy when
+two characters share similar UI needs. Exports turn the active profile into plain text you can
+save anywhere or send to a friend, and imports load one back in. Anything destructive asks
+first: importing, copying over, resetting, renaming, deleting and applying a preset all
+confirm before touching your rules.
 
 ## Keybinding
 
