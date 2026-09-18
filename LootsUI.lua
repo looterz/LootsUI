@@ -271,6 +271,12 @@ function LootsUI:ApplyPreset(key)
 		self.db.profile.rules[entry.key] = preset.rules[entry.key] or ""
 	end
 
+	if preset.fade then
+		for key, value in pairs(preset.fade) do
+			self.db.profile.fade[key] = value
+		end
+	end
+
 	self:ReloadProfile()
 	self:Print(preset.label .. " preset applied to the " .. self.db:GetCurrentProfile() .. " profile.")
 end

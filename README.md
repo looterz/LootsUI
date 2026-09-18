@@ -135,6 +135,35 @@ never out of date.
 | `[resting,nomod] hide; show` | Quiet interface in town, back with a modifier |
 | `[instance:raid] show; hide` | Raid frames only inside raids |
 
+## Recommended setup
+
+The Presets tab has a Recommended preset, the setup LootsUI is built around on Retail and
+World of Warcraft: Forever. Action bars and the player and target frames are there while you
+fight and for eight seconds after, everything else appears while you hold alt, the objective
+tracker steps aside during a fight, and the beta's report button stays hidden. The same setup as
+an import string, for the Profiles tab:
+
+```
+LootsUI:1
+fade.mode=fade
+fade.inDuration=0.1
+fade.outDuration=0.1
+rule.actionBar1=[combat][lastcombat][mod:alt][stealth][hastarget] show; hide
+rule.actionBar2=[combat][lastcombat][mod:alt][hastarget] show; hide
+rule.actionBar3=[mod:alt] show; hide
+rule.stanceBar=[mod:alt] show; hide
+rule.playerFrame=[combat][lastcombat][mod:alt][resource] show; hide
+rule.targetFrame=[combat][lastcombat][mod:alt][hastarget] show; hide
+rule.objectiveTracker=[combat] hide; show
+rule.microMenu=[mod:alt] show; hide
+rule.bags=[mod:alt] show; hide
+rule.experienceBar=[mod:alt] show; hide
+rule.reputationBar=[mod:alt] show; hide
+rule.issueReporter=hide
+```
+
+It works on the Classic clients too. Lines for a frame the client does not have are skipped.
+
 ## Fading
 
 Frames can snap or fade. Fading is the default, a tenth of a second each way. The Fading tab

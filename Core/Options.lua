@@ -8,7 +8,28 @@ local Conditions = ns.Conditions
 local Profiles = ns.Profiles
 
 local PRESETS = {
+	recommended = {
+		order = 1,
+		label = "Recommended",
+		description = "The setup LootsUI is built around: bars and frames while you fight and for a few seconds after, alt to peek at the rest, and the beta report button out of the way.",
+		fade = { mode = "fade", inDuration = 0.1, outDuration = 0.1 },
+		rules = {
+			actionBar1 = "[combat][lastcombat][mod:alt][stealth][hastarget] show; hide",
+			actionBar2 = "[combat][lastcombat][mod:alt][hastarget] show; hide",
+			actionBar3 = "[mod:alt] show; hide",
+			stanceBar = "[mod:alt] show; hide",
+			playerFrame = "[combat][lastcombat][mod:alt][resource] show; hide",
+			targetFrame = "[combat][lastcombat][mod:alt][hastarget] show; hide",
+			objectiveTracker = "[combat] hide; show",
+			microMenu = "[mod:alt] show; hide",
+			bags = "[mod:alt] show; hide",
+			experienceBar = "[mod:alt] show; hide",
+			reputationBar = "[mod:alt] show; hide",
+			issueReporter = "hide",
+		},
+	},
 	immersive = {
+		order = 2,
 		label = "Immersive",
 		description = "Hides most of the interface until you hold a modifier, enter combat, or take damage.",
 		rules = {
@@ -36,6 +57,7 @@ local PRESETS = {
 		},
 	},
 	resting = {
+		order = 3,
 		label = "Rested",
 		description = "Keeps the interface visible everywhere except while resting in an inn or city.",
 		rules = {
@@ -208,7 +230,7 @@ function Options:Build(addon)
 						type = "description",
 						order = 1,
 						fontSize = "medium",
-						name = "Applying a preset overwrites the rules in the active profile. Branch or export your profile in the Profiles tab first if you want to keep what you have.\n",
+						name = "Applying a preset overwrites the rules in the active profile, and Recommended sets the fade timings too. Branch or export your profile in the Profiles tab first if you want to keep what you have.\n",
 					},
 					clear = {
 						type = "execute",
@@ -228,7 +250,13 @@ function Options:Build(addon)
 	for key in pairs(PRESETS) do
 		presetKeys[#presetKeys + 1] = key
 	end
-	table.sort(presetKeys)
+	table.sort(presetKeys, function(a, b)
+		local left, right = PRESETS[a].order or math.huge, PRESETS[b].order or math.huge
+		if left ~= right then
+			return left < right
+		end
+		return a < b
+	end)
 
 	for index, key in ipairs(presetKeys) do
 		local preset = PRESETS[key]
