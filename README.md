@@ -137,11 +137,11 @@ never out of date.
 
 ## Recommended setup
 
-The Presets tab has a Recommended preset, the setup LootsUI is built around on Retail and
-World of Warcraft: Forever. Action bars and the player and target frames are there while you
-fight and for eight seconds after, everything else appears while you hold alt, the objective
-tracker steps aside during a fight, and the beta's report button stays hidden. The same setup as
-an import string, for the Profiles tab:
+The Presets tab has a Retail preset and a Forever preset, the setup LootsUI is built around.
+Action bars and the player and target frames are there while you fight and for eight seconds
+after, everything else appears while you hold alt, and the objective tracker steps aside during
+a fight. Forever is the same with the beta's report button kept hidden. The Forever setup as an
+import string, for the Profiles tab:
 
 ```
 LootsUI:1
@@ -162,7 +162,8 @@ rule.reputationBar=[mod:alt] show; hide
 rule.issueReporter=hide
 ```
 
-It works on the Classic clients too. Lines for a frame the client does not have are skipped.
+Drop the last line for Retail, or leave it, since a line for a frame the client does not have
+is skipped. The same goes for the Classic clients.
 
 ## Fading
 

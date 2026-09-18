@@ -7,29 +7,53 @@ local Registry = ns.Registry
 local Conditions = ns.Conditions
 local Profiles = ns.Profiles
 
+-- The setup LootsUI is built around: bars and frames while you fight and for a
+-- few seconds after, alt to peek at the rest. Retail and Forever share it, and
+-- Forever adds the beta's report button, which Retail does not have.
+local RECOMMENDED_FADE = { mode = "fade", inDuration = 0.1, outDuration = 0.1 }
+
+local RECOMMENDED_RULES = {
+	actionBar1 = "[combat][lastcombat][mod:alt][stealth][hastarget] show; hide",
+	actionBar2 = "[combat][lastcombat][mod:alt][hastarget] show; hide",
+	actionBar3 = "[mod:alt] show; hide",
+	stanceBar = "[mod:alt] show; hide",
+	playerFrame = "[combat][lastcombat][mod:alt][resource] show; hide",
+	targetFrame = "[combat][lastcombat][mod:alt][hastarget] show; hide",
+	objectiveTracker = "[combat] hide; show",
+	microMenu = "[mod:alt] show; hide",
+	bags = "[mod:alt] show; hide",
+	experienceBar = "[mod:alt] show; hide",
+	reputationBar = "[mod:alt] show; hide",
+}
+
+local function withRules(extra)
+	local rules = {}
+	for key, rule in pairs(RECOMMENDED_RULES) do
+		rules[key] = rule
+	end
+	for key, rule in pairs(extra or {}) do
+		rules[key] = rule
+	end
+	return rules
+end
+
 local PRESETS = {
-	recommended = {
+	retail = {
 		order = 1,
-		label = "Recommended",
-		description = "The setup LootsUI is built around: bars and frames while you fight and for a few seconds after, alt to peek at the rest, and the beta report button out of the way.",
-		fade = { mode = "fade", inDuration = 0.1, outDuration = 0.1 },
-		rules = {
-			actionBar1 = "[combat][lastcombat][mod:alt][stealth][hastarget] show; hide",
-			actionBar2 = "[combat][lastcombat][mod:alt][hastarget] show; hide",
-			actionBar3 = "[mod:alt] show; hide",
-			stanceBar = "[mod:alt] show; hide",
-			playerFrame = "[combat][lastcombat][mod:alt][resource] show; hide",
-			targetFrame = "[combat][lastcombat][mod:alt][hastarget] show; hide",
-			objectiveTracker = "[combat] hide; show",
-			microMenu = "[mod:alt] show; hide",
-			bags = "[mod:alt] show; hide",
-			experienceBar = "[mod:alt] show; hide",
-			reputationBar = "[mod:alt] show; hide",
-			issueReporter = "hide",
-		},
+		label = "Retail",
+		description = "The recommended Retail setup. Bars and frames while you fight and for a few seconds after, hold alt to see the rest, and the objective tracker steps aside in combat.",
+		fade = RECOMMENDED_FADE,
+		rules = withRules(),
+	},
+	forever = {
+		order = 2,
+		label = "Forever",
+		description = "The recommended World of Warcraft: Forever setup. The same as Retail, with the beta's report button kept hidden.",
+		fade = RECOMMENDED_FADE,
+		rules = withRules({ issueReporter = "hide" }),
 	},
 	immersive = {
-		order = 2,
+		order = 3,
 		label = "Immersive",
 		description = "Hides most of the interface until you hold a modifier, enter combat, or take damage.",
 		rules = {
@@ -57,7 +81,7 @@ local PRESETS = {
 		},
 	},
 	resting = {
-		order = 3,
+		order = 4,
 		label = "Rested",
 		description = "Keeps the interface visible everywhere except while resting in an inn or city.",
 		rules = {
@@ -230,7 +254,7 @@ function Options:Build(addon)
 						type = "description",
 						order = 1,
 						fontSize = "medium",
-						name = "Applying a preset overwrites the rules in the active profile, and Recommended sets the fade timings too. Branch or export your profile in the Profiles tab first if you want to keep what you have.\n",
+						name = "Applying a preset overwrites the rules in the active profile, and Retail and Forever set the fade timings too. Branch or export your profile in the Profiles tab first if you want to keep what you have.\n",
 					},
 					clear = {
 						type = "execute",
