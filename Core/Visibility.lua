@@ -12,6 +12,14 @@ local _G = _G
 local ALWAYS_SHOW = "show"
 
 local wrappers = {}
+-- Frames carried on their own alpha with no wrapper. Blizzard's layout code
+-- walks up through every parent, and a parent created by an addon taints that
+-- walk, which the client then blames for any secret value the frame compares
+-- afterwards. Only a protected frame is worth that risk, because a wrapper is
+-- the one way to hide one during combat. Everything else stays where the game
+-- put it and is never shown or hidden by LootsUI, only faded.
+local direct = {}
+local entryOf = {}
 local gates = {}
 local originals = {}
 local hooked = {}
@@ -51,8 +59,17 @@ end
 -- fight, and registering a driver then is impossible: the state driver manager
 -- is a protected frame, so writing its attributes is blocked in combat. Those
 -- rules are carried by alpha instead, which is never protected.
-local function usesAlpha(entryKey, usesCustom)
-	return usesCustom or usesFade(entryKey)
+local function usesAlpha(entryKey, usesCustom, frameName)
+	return (frameName and direct[frameName]) or usesCustom or usesFade(entryKey)
+end
+
+-- The frame whose alpha carries the rule: the wrapper for a protected frame,
+-- the frame itself for everything else.
+local function carrierFor(frameName)
+	if direct[frameName] then
+		return _G[frameName]
+	end
+	return wrappers[frameName]
 end
 
 local function verdictFor(rewritten)
@@ -74,7 +91,7 @@ end
 -- The rule is parsed here rather than read off the gate, because the gate can be
 -- holding an older rule whenever a registration was blocked.
 local function syncAlpha(frameName, entryKey, rewritten, instant)
-	local wrapper = wrappers[frameName]
+	local wrapper = carrierFor(frameName)
 	if not wrapper then
 		return
 	end
@@ -104,7 +121,7 @@ end
 -- Alpha only means something while the wrapper itself is shown, so it gets a
 -- constant rule once and is then left alone.
 local function ensureAlwaysShow(frameName, wrapper)
-	if wrapper.lootsAlwaysShow then
+	if direct[frameName] or wrapper.lootsAlwaysShow then
 		return
 	end
 
@@ -118,19 +135,18 @@ local function ensureAlwaysShow(frameName, wrapper)
 end
 
 local function reevaluate(frameName)
-	local wrapper = wrappers[frameName]
-	if not wrapper or suspended then
+	local entryKey = entryOf[frameName]
+	if not entryKey or not carrierFor(frameName) or suspended then
 		return
 	end
 
-	local entryKey = wrapper.lootsEntry
 	Visibility:Recheck(entryKey)
 
 	-- A gate left over from a previous mode must never touch the alpha of a frame
 	-- the driver is carrying, or it would be left invisible when the driver
 	-- shows it again.
 	local record = applied[entryKey]
-	if record and usesAlpha(entryKey, record.usesCustom) then
+	if record and usesAlpha(entryKey, record.usesCustom, frameName) then
 		syncAlpha(frameName, entryKey, record.rewritten, false)
 	end
 end
@@ -144,9 +160,31 @@ local function onGateHide(gate)
 end
 
 local function onWrapperHide(wrapper)
-	local record = applied[wrapper.lootsEntry]
-	if record and not usesAlpha(wrapper.lootsEntry, record.usesCustom) then
-		Visibility:Recheck(wrapper.lootsEntry)
+	local entryKey = entryOf[wrapper.lootsFrame]
+	local record = entryKey and applied[entryKey]
+	if record and not usesAlpha(entryKey, record.usesCustom, wrapper.lootsFrame) then
+		Visibility:Recheck(entryKey)
+	end
+end
+
+-- Blizzard code reaches its parent through GetParent and calls methods on it:
+-- the status tracking containers ask theirs to check for a layout change when
+-- edit mode opens. The wrapper answers GetParent once a frame is inside it, so
+-- it carries a forwarding copy of every function the real parent had, each one
+-- still running against the real parent. Widget methods the wrapper already
+-- has are left alone so its own Show and Hide keep working.
+local function delegateParentMethods(wrapper, original)
+	if not original or wrapper.lootsDelegated == original then
+		return
+	end
+	wrapper.lootsDelegated = original
+
+	for key, value in pairs(original) do
+		if type(value) == "function" and wrapper[key] == nil then
+			wrapper[key] = function(_, ...)
+				return value(original, ...)
+			end
+		end
 	end
 end
 
@@ -156,6 +194,7 @@ local function getWrapper(frameName, frame)
 		wrapper = CreateFrame("Frame", "LootsUI_" .. frameName, UIParent, "SecureHandlerStateTemplate")
 		wrapper:SetAllPoints(UIParent)
 		wrapper:SetFrameStrata(frame:GetFrameStrata())
+		wrapper.lootsFrame = frameName
 		wrapper:HookScript("OnHide", onWrapperHide)
 		wrappers[frameName] = wrapper
 	end
@@ -186,7 +225,7 @@ local function clearGate(frameName)
 end
 
 local function releaseFrame(frameName)
-	local wrapper = wrappers[frameName]
+	local wrapper = carrierFor(frameName)
 	if not wrapper then
 		return
 	end
@@ -198,7 +237,7 @@ local function releaseFrame(frameName)
 end
 
 local function applyRule(frameName, entryKey, rewritten, usesCustom)
-	local wrapper = wrappers[frameName]
+	local wrapper = carrierFor(frameName)
 	if not wrapper then
 		return
 	end
@@ -208,7 +247,7 @@ local function applyRule(frameName, entryKey, rewritten, usesCustom)
 		return
 	end
 
-	if usesAlpha(entryKey, usesCustom) then
+	if usesAlpha(entryKey, usesCustom, frameName) then
 		local gate = getGate(frameName)
 		ensureAlwaysShow(frameName, wrapper)
 
@@ -284,43 +323,68 @@ function Visibility:ApplyEntry(entry)
 
 	for _, frameName in ipairs(frames) do
 		local frame = _G[frameName]
-		local wrapper = getWrapper(frameName, frame)
-		wrapper.lootsEntry = entry.key
+		entryOf[frameName] = entry.key
 
-		if frame:GetParent() ~= wrapper then
-			-- Re-parenting a protected frame is blocked in combat, so the whole
-			-- entry waits for the fight to end rather than erroring.
-			if InCombatLockdown() then
-				pending[entry.key] = true
-				return
-			end
-
-			originals[frameName] = originals[frameName] or frame:GetParent()
-			reparenting = true
-			frame:SetParent(wrapper)
-			reparenting = false
-
-			-- A blocked call fails quietly apart from the game's own message, so
-			-- check whether it actually took.
-			if frame:GetParent() ~= wrapper then
-				Visibility.blocked = (Visibility.blocked or 0) + 1
-				pending[entry.key] = true
-				return
-			end
-
-			hookSetParent(frameName, frame)
+		if direct[frameName] == nil then
+			direct[frameName] = not (frame.IsProtected and frame:IsProtected())
 		end
 
-		if suspended then
-			releaseFrame(frameName)
+		if direct[frameName] then
+			if suspended then
+				releaseFrame(frameName)
+			else
+				applyRule(frameName, entry.key, rewritten, usesCustom)
+			end
 		else
-			applyRule(frameName, entry.key, rewritten, usesCustom)
+			local wrapper = getWrapper(frameName, frame)
+			wrapper.lootsEntry = entry.key
+
+			if not Visibility:Wrap(frameName, frame, wrapper, entry) then
+				return
+			end
+
+			if suspended then
+				releaseFrame(frameName)
+			else
+				applyRule(frameName, entry.key, rewritten, usesCustom)
+			end
 		end
 	end
 
 	applied[entry.key] = { frames = frames, rewritten = rewritten, usesCustom = usesCustom }
 	pending[entry.key] = nil
 	updateTicker()
+end
+
+-- Moves a protected frame into its wrapper. Returns false when combat blocked
+-- it, in which case the whole entry waits for the fight to end.
+function Visibility:Wrap(frameName, frame, wrapper, entry)
+	if frame:GetParent() ~= wrapper then
+		-- Re-parenting a protected frame is blocked in combat, so the whole
+		-- entry waits for the fight to end rather than erroring.
+		if InCombatLockdown() then
+			pending[entry.key] = true
+			return false
+		end
+
+		originals[frameName] = originals[frameName] or frame:GetParent()
+		delegateParentMethods(wrapper, originals[frameName])
+		reparenting = true
+		frame:SetParent(wrapper)
+		reparenting = false
+
+		-- A blocked call fails quietly apart from the game's own message, so
+		-- check whether it actually took.
+		if frame:GetParent() ~= wrapper then
+			Visibility.blocked = (Visibility.blocked or 0) + 1
+			pending[entry.key] = true
+			return false
+		end
+
+		hookSetParent(frameName, frame)
+	end
+
+	return true
 end
 
 function Visibility:ClearEntry(entry)
@@ -335,7 +399,7 @@ function Visibility:ClearEntry(entry)
 		local frame = _G[frameName]
 		local wrapper = wrappers[frameName]
 		local original = originals[frameName]
-		if frame and wrapper and original and frame:GetParent() ~= original and not InCombatLockdown() then
+		if frame and not direct[frameName] and wrapper and original and frame:GetParent() ~= original and not InCombatLockdown() then
 			UnregisterAttributeDriver(wrapper, "state-visibility")
 			wrapper.lootsAlwaysShow = nil
 			wrapper:Show()
@@ -458,7 +522,7 @@ function Visibility:Recheck(entryKey)
 end
 
 local function verifyFrame(frameName, entryKey, rewritten, usesCustom)
-	local wrapper = wrappers[frameName]
+	local wrapper = carrierFor(frameName)
 	if not wrapper or Fade:IsFading(wrapper) then
 		return
 	end
@@ -467,7 +531,7 @@ local function verifyFrame(frameName, entryKey, rewritten, usesCustom)
 	-- SetParent hook can see. A frame that has drifted out of its wrapper is
 	-- following whatever it landed in instead of its own rule, so put it back.
 	local frame = _G[frameName]
-	if frame and frame:GetParent() ~= wrapper and not InCombatLockdown() then
+	if not direct[frameName] and frame and frame:GetParent() ~= wrapper and not InCombatLockdown() then
 		local entry = Registry:GetEntry(entryKey)
 		if entry then
 			Visibility:ApplyEntry(entry)
@@ -475,7 +539,7 @@ local function verifyFrame(frameName, entryKey, rewritten, usesCustom)
 		return
 	end
 
-	if usesAlpha(entryKey, usesCustom) then
+	if usesAlpha(entryKey, usesCustom, frameName) then
 		syncAlpha(frameName, entryKey, rewritten, false)
 		return
 	end
@@ -540,8 +604,7 @@ function Visibility:FlushPending()
 
 	for _, frameName in ipairs(names) do
 		deferred[frameName] = nil
-		local wrapper = wrappers[frameName]
-		local entry = wrapper and Registry:GetEntry(wrapper.lootsEntry)
+		local entry = entryOf[frameName] and Registry:GetEntry(entryOf[frameName])
 		if entry then
 			self:ApplyEntry(entry)
 		end
@@ -599,19 +662,18 @@ function Visibility:GetDiagnostics(entry)
 	end
 
 	pieces[#pieces + 1] = "verdict=" .. tostring(verdictFor(record.rewritten))
-	pieces[#pieces + 1] = usesAlpha(entry.key, record.usesCustom) and "alpha" or "driver"
-
 	for _, frameName in ipairs(record.frames) do
-		local wrapper = wrappers[frameName]
+		local wrapper = carrierFor(frameName)
 		local frame = _G[frameName]
-		local state = "no wrapper"
+		local state = "no carrier"
 
 		if wrapper then
-			state = string.format("%s a%.1f", wrapper:IsShown() and "shown" or "hidden", wrapper:GetAlpha())
+			local mode = direct[frameName] and "direct" or (usesAlpha(entry.key, record.usesCustom) and "alpha" or "driver")
+			state = string.format("%s %s a%.1f", mode, wrapper:IsShown() and "shown" or "hidden", wrapper:GetAlpha())
 			if deferred[frameName] then
 				state = state .. " DEFERRED"
 			end
-			if frame and frame:GetParent() ~= wrapper then
+			if not direct[frameName] and frame and frame:GetParent() ~= wrapper then
 				state = state .. " UNPARENTED"
 			end
 			if frame and not frame:IsShown() then

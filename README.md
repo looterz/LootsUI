@@ -3,8 +3,8 @@
 Hide and show interface frames with macro conditionals, on every flavor of World of Warcraft.
 
 Give a frame a rule like `[mod:ctrl][combat] show; hide` and Loot's UI keeps it out of the way
-until you want it. Action bars, unit frames, the minimap, bags, the objective tracker and more,
-each with its own rule. On top of the game's own conditionals, LootsUI adds a few of its own,
+until you want it. Action bars, unit frames, the minimap, bags, the objective tracker, the
+cooldown manager, the damage meter and more, each with its own rule. On top of the game's own conditionals, LootsUI adds a few of its own,
 so a rule can react to things the macro system has no idea about.
 
 LootsUI was heavily inspired by [DinksUI](https://github.com/Duenke/DinksUI/tree/main), which
@@ -60,12 +60,30 @@ documentation](https://warcraft.wiki.gg/wiki/Macro_conditionals), with more back
 These are added by LootsUI. Mix them with the game's own conditionals freely, use them inside
 the same brackets, and put `no` in front of any of them to invert it.
 
+### Combat
+
+| Condition | True when |
+| --- | --- |
+| `[lastcombat]` | You are in combat, or left it fewer than eight seconds ago |
+| `[lastcombat:15]` | You are in combat, or left it fewer than the given seconds ago |
+| `[recentcombat]` | The same as `[lastcombat:8]`, for rules that read better without a number |
+
+The game's own `[combat]` cuts off the instant a fight ends. These keep a frame around for a
+moment afterwards, so the cast bar, cooldowns or a damage meter do not vanish while you are
+still looking at them. Use `[nolastcombat:30]` to mean "well out of combat".
+
 ### Health
 
 | Condition | True when |
 | --- | --- |
 | `[damaged]` | Your health is below maximum |
 | `[damaged:70]` | Your health is below 70 percent |
+
+Retail and World of Warcraft: Forever sometimes keep health and resource numbers back from
+addons, in PvP matches for instance. While they do, `[damaged]` and the resource conditions read
+as false rather than guessing, and `/loots debug` says the value is hidden by the game. On
+Forever the numbers are hidden most of the time, so build rules there on `[recentcombat]` and
+the game's own conditionals instead.
 
 ### Resources
 
@@ -108,6 +126,8 @@ never out of date.
 | Rule | Effect |
 | --- | --- |
 | `[combat][mod:alt] show; hide` | Action bars during a fight, or whenever you hold alt |
+| `[recentcombat][mod:alt] show; hide` | The same, but they linger eight seconds after the fight |
+| `[lastcombat:20] show; hide` | Damage meter during a fight and for twenty seconds after |
 | `[mod:ctrl][combat][damaged] show; hide` | Player frame when it matters, gone when it does not |
 | `[hastarget] show; hide` | Target frame only when you actually have a target |
 | `[combat][resource:35] show; hide` | Resource bar in combat or when you are running dry |
@@ -121,13 +141,15 @@ Frames can snap or fade. Fading is the default, a tenth of a second each way. Th
 changes that and the timings, and any frame can be set to its own Instant or Fade regardless of
 the default.
 
-One thing to know: a frame hidden by a fade, or by any rule using a LootsUI condition, goes
-transparent rather than fully hidden, so it can still catch a mouse click in the space it
-occupied. Rules built only from the game's own conditionals hide frames outright.
+One thing to know: most frames go transparent rather than fully hidden, so they can still catch
+a mouse click in the space they occupied. Only protected frames, the action bars and unit frames
+the game guards during combat, are hidden outright, and only when their rule is built from the
+game's own conditionals with fading off.
 
-That split is not a preference, it is what the game allows. Only the transparent route can
-react during a fight, because addons are not permitted to re-register a visibility rule once
-combat has started.
+That split is not a preference, it is what the game allows. A protected frame can only be hidden
+in combat by the game itself, which is why those go through a rule the game evaluates. Every
+other frame is left exactly where the game put it and faded, because moving it under an addon
+frame taints the game's own code on modern clients and breaks things like the damage meter.
 
 Fades interrupt cleanly, so a frame caught half way through fading out reverses from where it
 is rather than starting over.
@@ -161,7 +183,8 @@ from the Key Bindings panel or with
 
 | Client | TOC | Interface |
 | --- | --- | --- |
-| Retail | `LootsUI.toc` | 120007 |
+| Retail | `LootsUI.toc` | 120100 |
+| World of Warcraft: Forever | `LootsUI_Camelot.toc` | 16001 |
 | Classic Era, Season of Discovery, Hardcore | `LootsUI_Vanilla.toc` | 11509 |
 | Anniversary (Burning Crusade) | `LootsUI_TBC.toc` | 20506 |
 | Wrath Titan Reforged | `LootsUI_Wrath.toc` | 38001 |
@@ -170,6 +193,12 @@ from the Key Bindings panel or with
 A frame that does not exist in the client you are playing is greyed out in the options rather
 than causing errors.
 
+World of Warcraft: Forever runs the modern interface, so everything Retail has is there to
+hide, including the Cooldown Manager and the Damage Meter. While it is in beta the game also
+loads Blizzard's Issue Reporter, a report button parked on screen with no option to move or
+hide it. It has a rule of its own under Interface, so `hide` alone puts it away and
+`[mod:ctrl] show; hide` brings it back when you actually want to file something.
+
 If Questie is installed, its tracker is covered by the Objective Tracker rule alongside the
 game's own, so one rule handles both.
 
@@ -177,6 +206,6 @@ game's own, so one rule handles both.
 
 Heavily inspired by [DinksUI](https://github.com/Duenke/DinksUI/tree/main) by Duenke, which is
 where the idea of driving frame visibility with macro conditionals comes from. LootsUI exists to
-carry that further: custom conditions such as `[damaged]`, `[resource:90]`, `[hastarget]` and
+carry that further: custom conditions such as `[recentcombat]`, `[damaged]`, `[resource:90]`, `[hastarget]` and
 `[instance]` that the macro system has no equivalent for, and one addon that runs on Classic Era,
-Anniversary, Wrath Titan Reforged, Mists Classic and retail alike.
+Anniversary, Wrath Titan Reforged, Mists Classic, World of Warcraft: Forever and retail alike.

@@ -24,6 +24,24 @@ local function trim(text)
 	return text:match("^%s*(.-)%s*$")
 end
 
+-- Modern clients hand addons secret values for unit health and power in some
+-- situations, and comparing one throws. Nothing can be learned from a secret,
+-- so a read that comes back secret is treated as unknown.
+local function isSecret(value)
+	return issecretvalue ~= nil and value ~= nil and issecretvalue(value)
+end
+
+-- Returns the percentage, or nil when the game is keeping the numbers back.
+local function fraction(current, maximum)
+	if isSecret(current) or isSecret(maximum) then
+		return nil
+	end
+	if not maximum or maximum <= 0 or not current then
+		return nil
+	end
+	return (current / maximum) * 100, current, maximum
+end
+
 -- Returns negated, name, argument for a single term, or nil when the term is not
 -- a plain word (targeting units like @player, for instance) and must be left for
 -- the game's parser.
@@ -189,20 +207,24 @@ Conditions:Register({
 	description = "Your health is below maximum, or below the given percent.",
 	events = { "UNIT_HEALTH", "UNIT_MAXHEALTH" },
 	detail = function()
-		return string.format("health %d/%d", UnitHealth("player") or 0, UnitHealthMax("player") or 0)
+		local percent, current, maximum = fraction(UnitHealth("player"), UnitHealthMax("player"))
+		if not percent then
+			return "health hidden by the game"
+		end
+		return string.format("health %d/%d", current, maximum)
 	end,
 	evaluate = function(argument)
-		local maximum = UnitHealthMax("player")
-		if not maximum or maximum <= 0 then
+		local percent = fraction(UnitHealth("player"), UnitHealthMax("player"))
+		if not percent then
 			return false
 		end
 
 		local threshold = tonumber(argument)
 		if threshold then
-			return (UnitHealth("player") / maximum) * 100 < threshold
+			return percent < threshold
 		end
 
-		return UnitHealth("player") < maximum
+		return percent < 100
 	end,
 })
 
@@ -260,12 +282,12 @@ local POWER_EVENTS = { "UNIT_POWER_UPDATE", "UNIT_MAXPOWER", "UNIT_DISPLAYPOWER"
 -- set of conditions cover every class, and follow a druid through its forms.
 local function powerValues()
 	local index = UnitPowerType("player")
-	local maximum = UnitPowerMax("player", index)
-	if not maximum or maximum <= 0 then
+	local percent, current, maximum = fraction(UnitPower("player", index), UnitPowerMax("player", index))
+	if not percent then
 		return nil
 	end
 
-	return UnitPower("player", index) or 0, maximum
+	return current, maximum, percent
 end
 
 local function powerDetail()
@@ -286,14 +308,14 @@ Conditions:Register({
 	events = POWER_EVENTS,
 	detail = powerDetail,
 	evaluate = function(argument)
-		local current, maximum = powerValues()
+		local current, maximum, percent = powerValues()
 		if not current then
 			return false
 		end
 
 		local threshold = tonumber(argument)
 		if threshold then
-			return (current / maximum) * 100 < threshold
+			return percent < threshold
 		end
 
 		return current < maximum
@@ -323,5 +345,77 @@ Conditions:Register({
 	evaluate = function()
 		local current, maximum = powerValues()
 		return current ~= nil and current >= maximum
+	end,
+})
+
+-- Combat is tracked here from the regen events LootsUI already watches rather
+-- than registered by the condition, because registering the same event twice
+-- on the addon would replace the handler that flushes pending work.
+local DEFAULT_COMBAT_WINDOW = 8
+local combatActive = false
+local combatEndedAt
+
+function Conditions:NoteCombat(inCombat)
+	if inCombat then
+		combatActive = true
+	elseif combatActive then
+		combatActive = false
+		combatEndedAt = GetTime()
+	end
+end
+
+local function inCombat()
+	return combatActive or (InCombatLockdown and InCombatLockdown()) or false
+end
+
+local function secondsSinceCombat()
+	if inCombat() then
+		return 0
+	end
+	if not combatEndedAt then
+		return nil
+	end
+	return GetTime() - combatEndedAt
+end
+
+local function withinCombatWindow(seconds)
+	local since = secondsSinceCombat()
+	return since ~= nil and since < seconds
+end
+
+local function combatDetail()
+	local since = secondsSinceCombat()
+	if since == nil then
+		return "no combat yet this session"
+	end
+	if since == 0 then
+		return "in combat"
+	end
+	return string.format("%.1f seconds since combat", since)
+end
+
+Conditions:Register({
+	name = "lastcombat",
+	group = "Combat",
+	usage = "[lastcombat] or [lastcombat:15]",
+	description = "You are in combat, or left it fewer than the given seconds ago. Eight seconds if none are given.",
+	detail = combatDetail,
+	evaluate = function(argument)
+		local seconds = tonumber(argument) or DEFAULT_COMBAT_WINDOW
+		if seconds <= 0 then
+			return inCombat()
+		end
+		return withinCombatWindow(seconds)
+	end,
+})
+
+Conditions:Register({
+	name = "recentcombat",
+	group = "Combat",
+	usage = "[recentcombat]",
+	description = "You are in combat, or left it fewer than eight seconds ago. The same as [lastcombat:8].",
+	detail = combatDetail,
+	evaluate = function()
+		return withinCombatWindow(DEFAULT_COMBAT_WINDOW)
 	end,
 })

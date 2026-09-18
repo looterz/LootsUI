@@ -160,11 +160,13 @@ function LootsUI:ScheduleLateApply()
 end
 
 function LootsUI:OnCombatEnded()
+	Conditions:NoteCombat(false)
 	Visibility:Refresh()
 	Visibility:FlushPending()
 end
 
 function LootsUI:OnCombatStarted()
+	Conditions:NoteCombat(true)
 	Visibility:Refresh()
 end
 

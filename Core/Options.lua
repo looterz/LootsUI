@@ -29,6 +29,10 @@ local PRESETS = {
 			experienceBar = "[mod:ctrl][mod:alt] show; hide",
 			objectiveTracker = "[mod:ctrl][noinstance,nocombat] show; hide",
 			castBar = "[combat][mod:ctrl] show; hide",
+			essentialCooldowns = "[combat][mod:ctrl] show; hide",
+			utilityCooldowns = "[combat][mod:ctrl] show; hide",
+			trackedBuffs = "[combat][mod:ctrl] show; hide",
+			trackedBars = "[combat][mod:ctrl] show; hide",
 		},
 	},
 	resting = {
@@ -48,7 +52,7 @@ function Options:GetPresets()
 	return PRESETS
 end
 
-local GROUP_ORDER = { "Health", "Resources", "Target", "Stealth", "Location" }
+local GROUP_ORDER = { "Combat", "Health", "Resources", "Target", "Stealth", "Location" }
 
 local function buildConditionHelp()
 	local byGroup = {}
@@ -113,6 +117,7 @@ local HELP = table.concat({
 	"|cff00ff00Player Frame|r  [mod:ctrl][combat][damaged] show; hide",
 	"|cff00ff00Minimap|r  [resting,nomod] hide; show",
 	"|cff00ff00Raid Frames|r  [group:raid] show; hide",
+	"|cff00ff00Cast Bar|r  [recentcombat] show; hide",
 	"",
 }, "\n")
 

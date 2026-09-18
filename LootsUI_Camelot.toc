@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 16001
 ## Title: LootsUI
 ## Notes: Hide and show interface frames with macro conditionals.
 ## Author: looterz

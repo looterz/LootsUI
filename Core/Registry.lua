@@ -9,6 +9,7 @@ local CATEGORIES = {
 	{ key = "actionbars", label = "Action Bars" },
 	{ key = "unitframes", label = "Unit Frames" },
 	{ key = "interface", label = "Interface" },
+	{ key = "cooldowns", label = "Cooldown Manager" },
 }
 
 -- Frame names drifted between expansions and then converged again on the unified
@@ -86,6 +87,18 @@ local ENTRIES = {
 		key = "stanceBar", category = "actionbars", label = "Stance Bar",
 		resolve = function() return firstExisting("StanceBar", "StanceBarFrame") end,
 	},
+	{
+		key = "extraActionButton", category = "actionbars", label = "Extra Action Button",
+		resolve = function() return firstExisting("ExtraActionBarFrame") end,
+	},
+	{
+		key = "zoneAbility", category = "actionbars", label = "Zone Ability",
+		resolve = function() return firstExisting("ZoneAbilityFrame") end,
+	},
+	{
+		key = "vehicleLeave", category = "actionbars", label = "Leave Vehicle Button",
+		resolve = function() return firstExisting("MainMenuBarVehicleLeaveButton") end,
+	},
 
 	{
 		key = "playerFrame", category = "unitframes", label = "Player Frame",
@@ -118,6 +131,16 @@ local ENTRIES = {
 		resolve = function()
 			return firstNonEmpty(firstExisting("BossTargetFrameContainer"), indexed("Boss%dTargetFrame", 5))
 		end,
+	},
+	{
+		key = "totemFrame", category = "unitframes", label = "Totem Frame",
+		resolve = function() return firstExisting("TotemFrame") end,
+	},
+	-- The alternate power bar lives inside the encounter bar on modern clients,
+	-- so the container is taken when it exists and the bar itself otherwise.
+	{
+		key = "encounterBar", category = "unitframes", label = "Encounter Bar",
+		resolve = function() return firstExisting("EncounterBar", "PlayerPowerBarAlt") end,
 	},
 
 	{
@@ -188,6 +211,50 @@ local ENTRIES = {
 			end
 			return names
 		end,
+	},
+	{
+		key = "damageMeter", category = "interface", label = "Damage Meter",
+		resolve = function() return firstExisting("DamageMeter") end,
+	},
+	{
+		key = "durability", category = "interface", label = "Durability Figure",
+		resolve = function() return firstExisting("DurabilityFrame") end,
+	},
+	{
+		key = "vehicleSeats", category = "interface", label = "Vehicle Seat Indicator",
+		resolve = function() return firstExisting("VehicleSeatIndicator") end,
+	},
+	{
+		key = "queueStatus", category = "interface", label = "Queue Status Eye",
+		resolve = function() return firstExisting("QueueStatusButton") end,
+	},
+	{
+		key = "talkingHead", category = "interface", label = "Talking Head",
+		resolve = function() return firstExisting("TalkingHeadFrame") end,
+	},
+	-- Beta and PTR clients load Blizzard_PTRFeedback, whose report button sits
+	-- on screen with no way to move or hide it. The frame has no XML name, but
+	-- the addon keeps it in a global of the same spelling.
+	{
+		key = "issueReporter", category = "interface", label = "Issue Reporter (Beta and PTR)",
+		resolve = function() return firstExisting("PTR_IssueReporter") end,
+	},
+
+	{
+		key = "essentialCooldowns", category = "cooldowns", label = "Essential Cooldowns",
+		resolve = function() return firstExisting("EssentialCooldownViewer") end,
+	},
+	{
+		key = "utilityCooldowns", category = "cooldowns", label = "Utility Cooldowns",
+		resolve = function() return firstExisting("UtilityCooldownViewer") end,
+	},
+	{
+		key = "trackedBuffs", category = "cooldowns", label = "Tracked Buffs",
+		resolve = function() return firstExisting("BuffIconCooldownViewer") end,
+	},
+	{
+		key = "trackedBars", category = "cooldowns", label = "Tracked Bars",
+		resolve = function() return firstExisting("BuffBarCooldownViewer") end,
 	},
 }
 
