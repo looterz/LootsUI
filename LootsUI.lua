@@ -44,6 +44,33 @@ function LootsUI:OpenDatabase()
 	return replaced
 end
 
+-- The client serialises whatever the global points at when it writes the file,
+-- on logout and on reload alike. If it swapped the global after the last check
+-- above, the live database is not what it would write, so the global is pointed
+-- back at the live table first.
+function LootsUI:OnLogout()
+	if self.db and _G.LootsUIDB ~= self.db.sv then
+		_G.LootsUIDB = self.db.sv
+		self.savedTableRestored = (self.savedTableRestored or 0) + 1
+	end
+end
+
+-- The hand-over has no event of its own, so for a short while after each
+-- loading screen the global is polled for it.
+local ADOPT_WINDOW_SECONDS = 30
+
+function LootsUI:WatchForLateSavedVariables()
+	if self.adoptTicker then
+		self.adoptTicker:Cancel()
+	end
+
+	self.adoptTicker = C_Timer.NewTicker(1, function()
+		if self:OpenDatabase() then
+			self:ReloadProfile()
+		end
+	end, ADOPT_WINDOW_SECONDS)
+end
+
 function LootsUI:OnEnable()
 	self:OpenDatabase()
 	self:RegisterChatCommand("loots", "HandleCommand")
@@ -52,6 +79,7 @@ function LootsUI:OnEnable()
 	-- The interface is rebuilt behind every loading screen, so the rules have to
 	-- be reapplied each time rather than only at login.
 	self:RegisterEvent("PLAYER_ENTERING_WORLD", "ReloadProfile")
+	self:RegisterEvent("PLAYER_LOGOUT", "OnLogout")
 	self:RegisterEvent("PLAYER_REGEN_ENABLED", "OnCombatEnded")
 	-- Combat is the built in condition most rules hang off, so both edges get an
 	-- immediate recompute rather than waiting for the poll.
@@ -150,13 +178,17 @@ function LootsUI:MigrateProfile()
 	end
 end
 
-function LootsUI:ReloadProfile()
+function LootsUI:ReloadProfile(event)
 	self:OpenDatabase()
 	self:MigrateProfile()
 	Visibility:SetProfile(self.db.profile)
 	Visibility:ApplyAll()
 	self:UpdateConditionEvents()
 	self:ScheduleLateApply()
+
+	if event == "PLAYER_ENTERING_WORLD" then
+		self:WatchForLateSavedVariables()
+	end
 end
 
 -- Questie and addons like it build their frames well after we first apply, so a
@@ -325,7 +357,11 @@ function LootsUI:PrintStatus()
 	if self.lateSavedVariables then
 		state = state .. " The game handed over saved settings late " .. self.lateSavedVariables .. " time(s), and they were picked up."
 	end
+	if self.savedTableRestored then
+		state = state .. " The saved table was pointed back at the live settings " .. self.savedTableRestored .. " time(s)."
+	end
 	self:Print(state)
+	self:Print(self:DescribeSavedTable())
 
 	for _, entry in ipairs(Registry:GetEntries()) do
 		local rule = self.db.profile.rules[entry.key]
@@ -337,6 +373,31 @@ function LootsUI:PrintStatus()
 			end
 		end
 	end
+end
+
+-- One line that says whether the table the game will save is the one in use,
+-- and how many rules each side holds, which is the whole question on the
+-- Forever beta.
+function LootsUI:DescribeSavedTable()
+	local live = 0
+	for _, rule in pairs(self.db.profile.rules) do
+		if rule ~= "" then
+			live = live + 1
+		end
+	end
+
+	local global = _G.LootsUIDB
+	local stored = 0
+	local profile = global and global.profiles and global.profiles[self.db:GetCurrentProfile()]
+	for _, rule in pairs(profile and profile.rules or {}) do
+		if rule ~= "" then
+			stored = stored + 1
+		end
+	end
+
+	local same = global == self.db.sv
+	return string.format("Saved table %s the live one. Live profile %s: %d rules, saved table: %d rules.",
+		same and "is" or "is NOT", self.db:GetCurrentProfile(), live, stored)
 end
 
 function LootsUI:PrintDebug()
