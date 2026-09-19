@@ -24,6 +24,7 @@ local RECOMMENDED_RULES = {
 	bags = "[mod:alt] show; hide",
 	experienceBar = "[mod:alt] show; hide",
 	reputationBar = "[mod:alt] show; hide",
+	damageMeter = "[instance] show; hide",
 }
 
 local function withRules(extra)
@@ -41,7 +42,7 @@ local PRESETS = {
 	retail = {
 		order = 1,
 		label = "Retail",
-		description = "The recommended Retail setup. Bars and frames while you fight and for a few seconds after, hold alt to see the rest, and the objective tracker steps aside in combat.",
+		description = "The recommended Retail setup. Bars and frames while you fight and for a few seconds after, hold alt to see the rest, the objective tracker steps aside in combat, and the damage meter only shows inside instances.",
 		fade = RECOMMENDED_FADE,
 		rules = withRules(),
 	},

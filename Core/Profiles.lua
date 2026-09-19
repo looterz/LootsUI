@@ -6,6 +6,7 @@ ns.Profiles = Profiles
 local Registry = ns.Registry
 
 local EXPORT_HEADER = "LootsUI:1"
+local DB_NAME = "LootsUIDB"
 
 function Profiles:Defaults()
 	return {
@@ -95,6 +96,26 @@ function Profiles:Cleanup(db)
 			forgetProfileKeys(db, name)
 		end
 	end
+end
+
+-- Opens the database on the table the client owns, or hands back the existing
+-- one when it still is that table.
+--
+-- The World of Warcraft: Forever beta fills SavedVariables in after the first
+-- addon has already initialised, and LootsUI is the first addon the client
+-- loads. So the table AceDB was built on at ADDON_LOADED is not the one the
+-- client drops into the global a moment later, and not the one it writes back
+-- at logout either: the rules go into a table nothing saves, and the file on
+-- disk is rewritten unchanged. Whenever the global has been swapped out since
+-- the database was opened, the database is rebuilt on the client's table.
+function Profiles:Open(existing)
+	if existing and existing.sv == _G[DB_NAME] then
+		return existing, false
+	end
+
+	local db = LibStub("AceDB-3.0"):New(DB_NAME, { profile = self:Defaults() }, true)
+	self:Cleanup(db)
+	return db, existing ~= nil
 end
 
 function Profiles:Export(profile)

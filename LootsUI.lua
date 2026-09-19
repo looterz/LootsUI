@@ -12,21 +12,40 @@ local Profiles = ns.Profiles
 
 function LootsUI:OnInitialize()
 	self.conditionEvents = {}
-	self.db = LibStub("AceDB-3.0"):New("LootsUIDB", { profile = Profiles:Defaults() }, true)
-	Profiles:Cleanup(self.db)
+	self:OpenDatabase()
 
 	local AceConfig = LibStub("AceConfig-3.0")
 	local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 	AceConfig:RegisterOptionsTable(ADDON .. "_options", Options:Build(self))
 	self.optionsFrame = AceConfigDialog:AddToBlizOptions(ADDON .. "_options", "LootsUI")
+end
 
-	self.db.RegisterCallback(self, "OnProfileChanged", "ReloadProfile")
-	self.db.RegisterCallback(self, "OnProfileCopied", "ReloadProfile")
-	self.db.RegisterCallback(self, "OnProfileReset", "ReloadProfile")
+-- Points self.db at the database on the client's own saved table, rebuilding it
+-- when the client has swapped that table in late. Returns true when it did.
+function LootsUI:OpenDatabase()
+	local db, replaced = Profiles:Open(self.db)
+	if db == self.db then
+		return false
+	end
+
+	if self.db then
+		self.db.UnregisterAllCallbacks(self)
+	end
+
+	self.db = db
+	db.RegisterCallback(self, "OnProfileChanged", "ReloadProfile")
+	db.RegisterCallback(self, "OnProfileCopied", "ReloadProfile")
+	db.RegisterCallback(self, "OnProfileReset", "ReloadProfile")
+
+	if replaced then
+		self.lateSavedVariables = (self.lateSavedVariables or 0) + 1
+	end
+	return replaced
 end
 
 function LootsUI:OnEnable()
+	self:OpenDatabase()
 	self:RegisterChatCommand("loots", "HandleCommand")
 	self:RegisterChatCommand("lootsui", "HandleCommand")
 
@@ -132,6 +151,7 @@ function LootsUI:MigrateProfile()
 end
 
 function LootsUI:ReloadProfile()
+	self:OpenDatabase()
 	self:MigrateProfile()
 	Visibility:SetProfile(self.db.profile)
 	Visibility:ApplyAll()
@@ -301,6 +321,9 @@ function LootsUI:PrintStatus()
 	local state = Visibility:IsSuspended() and "Suspended, everything is visible." or "Active."
 	if blocked > 0 then
 		state = state .. " " .. blocked .. " of our own calls were blocked this session."
+	end
+	if self.lateSavedVariables then
+		state = state .. " The game handed over saved settings late " .. self.lateSavedVariables .. " time(s), and they were picked up."
 	end
 	self:Print(state)
 

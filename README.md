@@ -139,9 +139,10 @@ never out of date.
 
 The Presets tab has a Retail preset and a Forever preset, the setup LootsUI is built around.
 Action bars and the player and target frames are there while you fight and for eight seconds
-after, everything else appears while you hold alt, and the objective tracker steps aside during
-a fight. Forever is the same with the swing timers treated like the action bars and the beta's
-report button kept hidden. The Forever setup as an import string, for the Profiles tab:
+after, everything else appears while you hold alt, the objective tracker steps aside during a
+fight, and the damage meter only shows inside instances. Forever is the same with the swing
+timers treated like the action bars and the beta's report button kept hidden. The Forever setup
+as an import string, for the Profiles tab:
 
 ```
 LootsUI:1
@@ -159,6 +160,7 @@ rule.microMenu=[mod:alt] show; hide
 rule.bags=[mod:alt] show; hide
 rule.experienceBar=[mod:alt] show; hide
 rule.reputationBar=[mod:alt] show; hide
+rule.damageMeter=[instance] show; hide
 rule.swingTimerMainHand=[combat][lastcombat][mod:alt][hastarget] show; hide
 rule.swingTimerOffHand=[combat][lastcombat][mod:alt][hastarget] show; hide
 rule.swingTimerRanged=[combat][lastcombat][mod:alt][hastarget] show; hide
@@ -234,6 +236,11 @@ game also
 loads Blizzard's Issue Reporter, a report button parked on screen with no option to move or
 hide it. It has a rule of its own under Interface, so `hide` alone puts it away and
 `[mod:ctrl] show; hide` brings it back when you actually want to file something.
+
+The beta also hands addons their saved settings a moment late, after the first addon has already
+started, and LootsUI is the first one the game loads. Earlier versions lost every rule on each
+login and reload because of it. LootsUI now notices the late hand-over and picks the settings
+up, and `/loots status` says when that happened.
 
 If Questie is installed, its tracker is covered by the Objective Tracker rule alongside the
 game's own, so one rule handles both.
