@@ -48,9 +48,12 @@ local PRESETS = {
 	forever = {
 		order = 2,
 		label = "Forever",
-		description = "The recommended World of Warcraft: Forever setup. The same as Retail, with the beta's report button kept hidden.",
+		description = "The recommended World of Warcraft: Forever setup. The same as Retail, with the swing timers treated like the action bars and the beta's report button kept hidden.",
 		fade = RECOMMENDED_FADE,
-		rules = withRules({ issueReporter = "hide" }),
+		rules = withRules({
+			swingTimers = "[combat][lastcombat][mod:alt][hastarget] show; hide",
+			issueReporter = "hide",
+		}),
 	},
 	immersive = {
 		order = 3,

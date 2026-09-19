@@ -140,8 +140,8 @@ never out of date.
 The Presets tab has a Retail preset and a Forever preset, the setup LootsUI is built around.
 Action bars and the player and target frames are there while you fight and for eight seconds
 after, everything else appears while you hold alt, and the objective tracker steps aside during
-a fight. Forever is the same with the beta's report button kept hidden. The Forever setup as an
-import string, for the Profiles tab:
+a fight. Forever is the same with the swing timers treated like the action bars and the beta's
+report button kept hidden. The Forever setup as an import string, for the Profiles tab:
 
 ```
 LootsUI:1
@@ -159,11 +159,12 @@ rule.microMenu=[mod:alt] show; hide
 rule.bags=[mod:alt] show; hide
 rule.experienceBar=[mod:alt] show; hide
 rule.reputationBar=[mod:alt] show; hide
+rule.swingTimers=[combat][lastcombat][mod:alt][hastarget] show; hide
 rule.issueReporter=hide
 ```
 
-Drop the last line for Retail, or leave it, since a line for a frame the client does not have
-is skipped. The same goes for the Classic clients.
+Drop the last two lines for Retail, or leave them, since a line for a frame the client does not
+have is skipped. The same goes for the Classic clients.
 
 ## Fading
 
@@ -224,7 +225,9 @@ A frame that does not exist in the client you are playing is greyed out in the o
 than causing errors.
 
 World of Warcraft: Forever runs the modern interface, so everything Retail has is there to
-hide, including the Cooldown Manager and the Damage Meter. While it is in beta the game also
+hide, including the Cooldown Manager and the Damage Meter, plus its own optional swing timer,
+which the Swing Timers rule covers for main hand, off hand and ranged together. While it is in
+beta the game also
 loads Blizzard's Issue Reporter, a report button parked on screen with no option to move or
 hide it. It has a rule of its own under Interface, so `hide` alone puts it away and
 `[mod:ctrl] show; hide` brings it back when you actually want to file something.

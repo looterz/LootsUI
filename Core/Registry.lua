@@ -36,6 +36,17 @@ local function indexed(pattern, count)
 	return names
 end
 
+local function allExisting(...)
+	local names = {}
+	for index = 1, select("#", ...) do
+		local name = select(index, ...)
+		if _G[name] then
+			names[#names + 1] = name
+		end
+	end
+	return names
+end
+
 local function firstNonEmpty(...)
 	for index = 1, select("#", ...) do
 		local names = select(index, ...)
@@ -215,6 +226,14 @@ local ENTRIES = {
 	{
 		key = "damageMeter", category = "interface", label = "Damage Meter",
 		resolve = function() return firstExisting("DamageMeter") end,
+	},
+	-- World of Warcraft: Forever's optional swing timer is three frames, one per
+	-- hand and one for ranged, each placed on its own in edit mode.
+	{
+		key = "swingTimers", category = "interface", label = "Swing Timers",
+		resolve = function()
+			return allExisting("SwingTimerMainHandFrame", "SwingTimerOffHandFrame", "SwingTimerRangedFrame")
+		end,
 	},
 	{
 		key = "durability", category = "interface", label = "Durability Figure",
