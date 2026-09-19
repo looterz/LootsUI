@@ -32,6 +32,7 @@ section below for keeping settings per character and backing them up.
 | `/loots toggle` | Flips between the two, handy in a macro |
 | `/loots status` | Prints the rule in effect for each frame |
 | `/loots debug` | Prints what LootsUI thinks is true right now |
+| `/loots trace` | Prints what the saved settings looked like at each stage of the session |
 
 `/lootsui` works the same as `/loots`.
 
@@ -237,10 +238,12 @@ loads Blizzard's Issue Reporter, a report button parked on screen with no option
 hide it. It has a rule of its own under Interface, so `hide` alone puts it away and
 `[mod:ctrl] show; hide` brings it back when you actually want to file something.
 
-The beta also hands addons their saved settings a moment late, after the first addon has already
-started, and LootsUI is the first one the game loads. Earlier versions lost every rule on each
-login and reload because of it. LootsUI now notices the late hand-over and picks the settings
-up, and `/loots status` says when that happened.
+The beta client also has a bug of its own that no addon can work around: it writes every addon's
+saved settings to disk on logout and reload, and never reads them back. Your rules are in the
+file, and the next session starts from nothing. Every addon is affected on every platform until
+Blizzard fixes the client. Until then the Forever preset is the quickest way back, and
+`/loots trace` prints what LootsUI saw at each stage of the session, which is how this was
+confirmed.
 
 If Questie is installed, its tracker is covered by the Objective Tracker rule alongside the
 game's own, so one rule handles both.

@@ -10,9 +10,66 @@ local Visibility = ns.Visibility
 local Options = ns.Options
 local Profiles = ns.Profiles
 
+-- A short log kept inside the saved table itself, so that what the addon saw
+-- at each stage of a session can be read back from the file the client wrote.
+local TRACE_LIMIT = 40
+
+function LootsUI:Trace(what)
+	local sv = self.db and self.db.sv
+	if not sv then
+		return
+	end
+
+	-- AceDB strips defaults on logout before this runs, and a profile with no
+	-- rules loses its rules table entirely.
+	local live = 0
+	for _, rule in pairs(self.db.profile.rules or {}) do
+		if rule ~= "" then
+			live = live + 1
+		end
+	end
+
+	local global = _G.LootsUIDB
+	local stored = 0
+	local profile = global and global.profiles and global.profiles[self.db:GetCurrentProfile()]
+	for _, rule in pairs(profile and profile.rules or {}) do
+		if rule ~= "" then
+			stored = stored + 1
+		end
+	end
+
+	sv.trace = sv.trace or {}
+	sv.trace[#sv.trace + 1] = string.format("%s %s live=%d global=%d same=%s profile=%s",
+		date("%m-%d %H:%M:%S"), what, live, stored, tostring(global == sv), self.db:GetCurrentProfile())
+	while #sv.trace > TRACE_LIMIT do
+		table.remove(sv.trace, 1)
+	end
+end
+
+function LootsUI:PrintTrace()
+	local trace = self.db and self.db.sv and self.db.sv.trace
+	if not trace or #trace == 0 then
+		self:Print("No trace recorded yet.")
+		return
+	end
+	for _, line in ipairs(trace) do
+		self:Print(line)
+	end
+end
+
 function LootsUI:OnInitialize()
 	self.conditionEvents = {}
+	local preloaded = _G.LootsUIDB
+	local preloadedRules = preloaded and preloaded.profiles and preloaded.profiles.Default
+		and preloaded.profiles.Default.rules
+	local count = 0
+	for _, rule in pairs(preloadedRules or {}) do
+		if rule ~= "" then
+			count = count + 1
+		end
+	end
 	self:OpenDatabase()
+	self:Trace(string.format("init global-before=%s default-rules-before=%d", tostring(preloaded ~= nil), count))
 
 	local AceConfig = LibStub("AceConfig-3.0")
 	local AceConfigDialog = LibStub("AceConfigDialog-3.0")
@@ -29,17 +86,25 @@ function LootsUI:OpenDatabase()
 		return false
 	end
 
+	local previousTrace = self.db and self.db.sv and self.db.sv.trace
 	if self.db then
 		self.db.UnregisterAllCallbacks(self)
 	end
 
 	self.db = db
+	if previousTrace then
+		db.sv.trace = db.sv.trace or {}
+		for _, line in ipairs(previousTrace) do
+			db.sv.trace[#db.sv.trace + 1] = line
+		end
+	end
 	db.RegisterCallback(self, "OnProfileChanged", "ReloadProfile")
 	db.RegisterCallback(self, "OnProfileCopied", "ReloadProfile")
 	db.RegisterCallback(self, "OnProfileReset", "ReloadProfile")
 
 	if replaced then
 		self.lateSavedVariables = (self.lateSavedVariables or 0) + 1
+		self:Trace("adopted late saved table")
 	end
 	return replaced
 end
@@ -49,9 +114,11 @@ end
 -- above, the live database is not what it would write, so the global is pointed
 -- back at the live table first.
 function LootsUI:OnLogout()
+	self:Trace("logout before")
 	if self.db and _G.LootsUIDB ~= self.db.sv then
 		_G.LootsUIDB = self.db.sv
 		self.savedTableRestored = (self.savedTableRestored or 0) + 1
+		self:Trace("logout pointed global at live table")
 	end
 end
 
@@ -69,10 +136,14 @@ function LootsUI:WatchForLateSavedVariables()
 			self:ReloadProfile()
 		end
 	end, ADOPT_WINDOW_SECONDS)
+	C_Timer.After(ADOPT_WINDOW_SECONDS + 1, function()
+		self:Trace("watch window over")
+	end)
 end
 
 function LootsUI:OnEnable()
 	self:OpenDatabase()
+	self:Trace("login")
 	self:RegisterChatCommand("loots", "HandleCommand")
 	self:RegisterChatCommand("lootsui", "HandleCommand")
 
@@ -178,8 +249,13 @@ function LootsUI:MigrateProfile()
 	end
 end
 
-function LootsUI:ReloadProfile(event)
+function LootsUI:ReloadProfile(event, isLogin, isReload)
 	self:OpenDatabase()
+	if event == "PLAYER_ENTERING_WORLD" then
+		self:Trace(string.format("entering world login=%s reload=%s", tostring(isLogin), tostring(isReload)))
+	elseif event then
+		self:Trace(tostring(event))
+	end
 	self:MigrateProfile()
 	Visibility:SetProfile(self.db.profile)
 	Visibility:ApplyAll()
@@ -330,6 +406,7 @@ function LootsUI:ApplyPreset(key)
 	end
 
 	self:ReloadProfile()
+	self:Trace("preset " .. key)
 	self:Print(preset.label .. " preset applied to the " .. self.db:GetCurrentProfile() .. " profile.")
 end
 
@@ -380,7 +457,7 @@ end
 -- Forever beta.
 function LootsUI:DescribeSavedTable()
 	local live = 0
-	for _, rule in pairs(self.db.profile.rules) do
+	for _, rule in pairs(self.db.profile.rules or {}) do
 		if rule ~= "" then
 			live = live + 1
 		end
@@ -458,7 +535,9 @@ function LootsUI:HandleCommand(input)
 		self:PrintStatus()
 	elseif command == "debug" then
 		self:PrintDebug()
+	elseif command == "trace" then
+		self:PrintTrace()
 	else
-		self:Print("Unknown command. Try show, hide, toggle, status or debug.")
+		self:Print("Unknown command. Try show, hide, toggle, status, debug or trace.")
 	end
 end
