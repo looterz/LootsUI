@@ -159,11 +159,13 @@ rule.microMenu=[mod:alt] show; hide
 rule.bags=[mod:alt] show; hide
 rule.experienceBar=[mod:alt] show; hide
 rule.reputationBar=[mod:alt] show; hide
-rule.swingTimers=[combat][lastcombat][mod:alt][hastarget] show; hide
+rule.swingTimerMainHand=[combat][lastcombat][mod:alt][hastarget] show; hide
+rule.swingTimerOffHand=[combat][lastcombat][mod:alt][hastarget] show; hide
+rule.swingTimerRanged=[combat][lastcombat][mod:alt][hastarget] show; hide
 rule.issueReporter=hide
 ```
 
-Drop the last two lines for Retail, or leave them, since a line for a frame the client does not
+Drop the last four lines for Retail, or leave them, since a line for a frame the client does not
 have is skipped. The same goes for the Classic clients.
 
 ## Fading
@@ -225,9 +227,10 @@ A frame that does not exist in the client you are playing is greyed out in the o
 than causing errors.
 
 World of Warcraft: Forever runs the modern interface, so everything Retail has is there to
-hide, including the Cooldown Manager and the Damage Meter, plus its own optional swing timer,
-which the Swing Timers rule covers for main hand, off hand and ranged together. While it is in
-beta the game also
+hide, including the Cooldown Manager and the Damage Meter, plus its own optional swing timer.
+Its main hand, off hand and ranged timers are three frames, and each has a rule of its own under
+Interface, so a hunter can keep the ranged timer and lose the others. While it is in beta the
+game also
 loads Blizzard's Issue Reporter, a report button parked on screen with no option to move or
 hide it. It has a rule of its own under Interface, so `hide` alone puts it away and
 `[mod:ctrl] show; hide` brings it back when you actually want to file something.

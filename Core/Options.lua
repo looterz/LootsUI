@@ -51,7 +51,9 @@ local PRESETS = {
 		description = "The recommended World of Warcraft: Forever setup. The same as Retail, with the swing timers treated like the action bars and the beta's report button kept hidden.",
 		fade = RECOMMENDED_FADE,
 		rules = withRules({
-			swingTimers = "[combat][lastcombat][mod:alt][hastarget] show; hide",
+			swingTimerMainHand = "[combat][lastcombat][mod:alt][hastarget] show; hide",
+			swingTimerOffHand = "[combat][lastcombat][mod:alt][hastarget] show; hide",
+			swingTimerRanged = "[combat][lastcombat][mod:alt][hastarget] show; hide",
 			issueReporter = "hide",
 		}),
 	},
