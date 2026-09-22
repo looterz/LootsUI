@@ -10,6 +10,10 @@ local Visibility = ns.Visibility
 local Options = ns.Options
 local Profiles = ns.Profiles
 
+-- World of Warcraft: Forever is the mainline client on the 1.60 line, the one
+-- mainline build with an interface below 100000.
+ns.isForever = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE and (select(4, GetBuildInfo()) or 0) < 100000
+
 -- A short log kept inside the saved table itself, so that what the addon saw
 -- at each stage of a session can be read back from the file the client wrote.
 local TRACE_LIMIT = 40
@@ -249,10 +253,42 @@ function LootsUI:MigrateProfile()
 	end
 end
 
+-- The Forever beta writes saved settings but never reads them back, so every
+-- login and reload starts from nothing. Rather than make players press the
+-- preset button each time, the Forever preset is applied for them when the
+-- profile comes back empty. A profile that comes back with rules in it is
+-- left alone, so this stops doing anything the day the client is fixed.
+function LootsUI:ApplyForeverPresetIfEmpty()
+	if not ns.isForever or self.db.profile.foreverPresetAtLogin == false then
+		return false
+	end
+
+	for _, rule in pairs(self.db.profile.rules or {}) do
+		if rule ~= "" then
+			return false
+		end
+	end
+
+	local preset = Options:GetPresets().forever
+	for _, entry in ipairs(Registry:GetEntries()) do
+		self.db.profile.rules[entry.key] = preset.rules[entry.key] or ""
+	end
+	for key, value in pairs(preset.fade) do
+		self.db.profile.fade[key] = value
+	end
+
+	self:Trace("forever preset applied at login")
+	self:Print("The beta did not bring your settings back, so the Forever preset was applied. The Presets tab can turn this off.")
+	return true
+end
+
 function LootsUI:ReloadProfile(event, isLogin, isReload)
 	self:OpenDatabase()
 	if event == "PLAYER_ENTERING_WORLD" then
 		self:Trace(string.format("entering world login=%s reload=%s", tostring(isLogin), tostring(isReload)))
+		if isLogin or isReload then
+			self:ApplyForeverPresetIfEmpty()
+		end
 	elseif event then
 		self:Trace(tostring(event))
 	end
@@ -346,6 +382,14 @@ function LootsUI:SetRuleValue(info, value)
 	end
 
 	self:UpdateConditionEvents()
+end
+
+function LootsUI:GetForeverPresetAtLogin()
+	return self.db.profile.foreverPresetAtLogin ~= false
+end
+
+function LootsUI:SetForeverPresetAtLogin(_, value)
+	self.db.profile.foreverPresetAtLogin = value and true or false
 end
 
 function LootsUI:GetFadeSetting(info)

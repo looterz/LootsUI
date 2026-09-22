@@ -241,9 +241,13 @@ hide it. It has a rule of its own under Interface, so `hide` alone puts it away 
 The beta client also has a bug of its own that no addon can work around: it writes every addon's
 saved settings to disk on logout and reload, and never reads them back. Your rules are in the
 file, and the next session starts from nothing. Every addon is affected on every platform until
-Blizzard fixes the client. Until then the Forever preset is the quickest way back, and
-`/loots trace` prints what LootsUI saw at each stage of the session, which is how this was
-confirmed.
+Blizzard fixes the client.
+
+So on Forever, LootsUI applies the Forever preset for you at login and after a reload whenever
+it finds no rules, and says so in chat. The Presets tab has a switch for it, on by default. It
+leaves a profile that came back with rules alone, which means it stops doing anything the day
+the client is fixed, and it will be removed once that happens. `/loots trace` prints what LootsUI
+saw at each stage of the session, which is how the bug was confirmed.
 
 If Questie is installed, its tracker is covered by the Objective Tracker rule alongside the
 game's own, so one rule handles both.

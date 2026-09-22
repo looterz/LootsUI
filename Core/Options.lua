@@ -262,6 +262,16 @@ function Options:Build(addon)
 						fontSize = "medium",
 						name = "Applying a preset overwrites the rules in the active profile, and Retail and Forever set the fade timings too. Branch or export your profile in the Profiles tab first if you want to keep what you have.\n",
 					},
+					foreverAtLogin = {
+						type = "toggle",
+						order = 1.5,
+						width = "full",
+						name = "Apply the Forever preset at login (works around the beta's settings bug)",
+						desc = "The World of Warcraft: Forever beta writes your settings but never reads them back, so every login and reload starts empty. With this on, LootsUI applies the Forever preset whenever it finds no rules at login or after a reload. It leaves a profile that came back with rules alone, so it stops doing anything once the client is fixed.",
+						hidden = function() return not ns.isForever end,
+						get = function() return addon:GetForeverPresetAtLogin() end,
+						set = function(_, value) addon:SetForeverPresetAtLogin(nil, value) end,
+					},
 					clear = {
 						type = "execute",
 						order = 2,

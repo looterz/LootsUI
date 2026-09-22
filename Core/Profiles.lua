@@ -17,6 +17,7 @@ function Profiles:Defaults()
 			inDuration = 0.10,
 			outDuration = 0.10,
 		},
+		foreverPresetAtLogin = true,
 	}
 end
 
